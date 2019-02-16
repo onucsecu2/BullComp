@@ -23,10 +23,13 @@ ID [A-Za-z_0-9][_A-Za-z0-9]*
 	yylval.values.type = 2;
 	return DOUBLE_VALUE;
 }
+echo {return ECHO; }
 double { return DOUBLE; }
 int {return INTEGER;}
-{ID}  {return IDENTIFIER; }
-[-+*/:=;\n]      { return *yytext; }
+{ID}  {                p=(char *)calloc(strlen(yytext)+1,sizeof(char));
+                       strcpy(p,yytext);
+                       yylval.values.var=p; ;return IDENTIFIER; }
+[-+*/:=;()\n]      { return *yytext; }
 
 [ \t]       ;
 
