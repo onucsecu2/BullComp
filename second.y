@@ -45,8 +45,8 @@ stmt	: ECHO '(' expr ')' ';' 		{ $$ = $3;
 							printf("=> %d\n",$$.ival);
 				      		else
 							printf("=> %f\n",$$.fval);}
-	| IDENTIFIER ':' DOUBLE '=' DOUBLE_VALUE ';'    { $$.fval = $5.fval ; $$.type=2; }
-	| IDENTIFIER ':' INTEGER '=' INTEGER_VALUE ';'  {  varTable($5.ival,0.0,1,$1.var) ;}
+	| IDENTIFIER ':' DOUBLE '=' DOUBLE_VALUE ';'    { varTable($5.ival,$5.fval    ,2,$1.var) ;}
+	| IDENTIFIER ':' INTEGER '=' INTEGER_VALUE ';'  { varTable($5.ival,1.0*$5.ival,1,$1.var) ;}
 	;
 expr:	  
 	  IDENTIFIER		  { $$ = varGet($1.var);  }
@@ -59,6 +59,39 @@ expr:
 						
 					}else{
 						$$.fval = $1.fval + $3.fval;
+						$$.type=2;
+					}
+				}
+	| expr '-' expr		{ 
+					if($1.type==1 && $3.type==1){ 
+						$$.ival = $1.ival - $3.ival;
+						$$.fval=$$.ival*1.0;
+						$$.type=1;
+						
+					}else{
+						$$.fval = $1.fval - $3.fval;
+						$$.type=2;
+					}
+				}
+	| expr '*' expr		{ 
+					if($1.type==1 && $3.type==1){ 
+						$$.ival = $1.ival * $3.ival;
+						$$.fval=$$.ival*1.0;
+						$$.type=1;
+						
+					}else{
+						$$.fval = $1.fval * $3.fval;
+						$$.type=2;
+					}
+				}
+	| expr '/' expr		{ 
+					if($1.type==1 && $3.type==1){ 
+						$$.ival = $1.ival / $3.ival;
+						$$.fval=$$.ival*1.0;
+						$$.type=1;
+						
+					}else{
+						$$.fval = $1.fval / $3.fval;
 						$$.type=2;
 					}
 				}
