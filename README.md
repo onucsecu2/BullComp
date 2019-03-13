@@ -1,5 +1,5 @@
 # BullComp
- This is a baby compiler
+ This is a baby compiler.Plz Dont give me stress or make me complex ^_^
  
  ### Example:
  ```sh
