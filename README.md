@@ -7,7 +7,8 @@
  y:int=7;
  z:int=x+y;
  echo(z);
- Output:```
+ ```
+ Output:
  ```sh
  =>11
  ```
