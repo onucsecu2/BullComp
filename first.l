@@ -10,7 +10,7 @@ void yyerror(char *);
 char *p;
 %}
 DIGIT [0-9]
-ID [A-Za-z_0-9][_A-Za-z0-9]*
+ID [A-Za-z_][_A-Za-z0-9]*
 %%
 {DIGIT}+ {
 	yylval.values.ival = atoi(yytext);
@@ -23,13 +23,15 @@ ID [A-Za-z_0-9][_A-Za-z0-9]*
 	yylval.values.type = 2;
 	return DOUBLE_VALUE;
 }
+return {return RETURN; }
 echo {return ECHO; }
+def {return DEF; }
 double { return DOUBLE; }
 int {return INTEGER;}
 {ID}  {                p=(char *)calloc(strlen(yytext)+1,sizeof(char));
                        strcpy(p,yytext);
                        yylval.values.var=p; ;return IDENTIFIER; }
-[-+*/:=;()\n]      { return *yytext; }
+[-+*/:=;><,.(){}\n]      { return *yytext; }
 
 [ \t]       ;
 

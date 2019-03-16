@@ -22,12 +22,13 @@ struct number map[50];
 int INT_TYPE = 1;
 int DOUBLE_TYPE = 2;
 int vindex=0;
+int lineno=0;
 %}
 %union {
 	struct number values;
 	
 }
-%token INTEGER DOUBLE ECHO
+%token INTEGER DOUBLE ECHO DEF RETURN
 %token <values> INTEGER_VALUE 
 %token <values> DOUBLE_VALUE
 %token <values> IDENTIFIER
@@ -35,18 +36,26 @@ int vindex=0;
 %type <values> expr 
 %type <values> value
 %type <values> stmt
+%type <values> block
 %% 
 program:
-          program stmt '\n'         { $$=$2;}
+          program stmt '\n'         { $$=$2;lineno++;}
 	|          
         ;
-stmt	: ECHO '(' expr ')' ';' 		{ $$ = $3; 
+stmt	: ECHO '(' expr ')' 	 		{ $$ = $3; 
 						if($$.type==1)
 							printf("=> %d\n",$$.ival);
 				      		else
 							printf("=> %f\n",$$.fval);}
-	| IDENTIFIER ':' DOUBLE '=' DOUBLE_VALUE ';'    { varTable($5.ival,$5.fval    ,2,$1.var) ;}
-	| IDENTIFIER ':' INTEGER '=' INTEGER_VALUE ';'  { varTable($5.ival,1.0*$5.ival,1,$1.var) ;}
+	| var_decl
+	| func_decl			
+	;
+var_decl :  IDENTIFIER ':' DOUBLE '=' DOUBLE_VALUE        { varTable($5.ival,$5.fval    ,2,$1.var) ;}
+	| IDENTIFIER ':' INTEGER '=' INTEGER_VALUE 	{ varTable($5.ival,1.0*$5.ival,1,$1.var) ;}
+    	| IDENTIFIER ':' INTEGER '=' expr		{ varTable($5.ival,1.0*$5.ival,1,$1.var) ;}
+	| IDENTIFIER ':' INTEGER			{ varTable(0,0    ,1,$1.var) ;}
+	| IDENTIFIER ':' DOUBLE				{ varTable(0,0    ,2,$1.var) ;}
+	| IDENTIFIER '=' expr	
 	;
 expr:	  
 	  IDENTIFIER		  { $$ = varGet($1.var);  }
@@ -95,15 +104,29 @@ expr:
 						$$.type=2;
 					}
 				}
-        ;
+	| '(' expr ')'
+	| RETURN expr        		{$$=$2; }
+	;
 value:
  	INTEGER_VALUE
 	| DOUBLE_VALUE
 	;
-	
+func_decl : 
+	DEF IDENTIFIER '(' func_decl_args ')' ':'  INTEGER '=''>' block 
+	| '('func_decl_args')' ':'  IDENTIFIER '=''>' block 
+	;
+func_decl_args :
+	var_decl    
+	| func_decl_args ',' var_decl
+	|
+	; 
+block   : '{' expr '}' 			{$$=$2; }
+	| '{' '}'  
+	;
+
 %%
 void yyerror(char *s) {
-    fprintf(stderr, "%s\n", s);
+    fprintf(stderr, "%s in line no:%d at \n", s,lineno+1);
     exit(0);
 }
 void varTable(int vali,double valf,int type,char *s ){
