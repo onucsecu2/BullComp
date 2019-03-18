@@ -38,6 +38,7 @@ for {return FOR; }
 return {return RETURN; }
 echo {return ECHO; }
 def {return DEF; }
+void {return VOID; }
 double { return DOUBLE; }
 int {return INTEGER;}
 {ID}  {                p=(char *)calloc(strlen(yytext)+1,sizeof(char));
