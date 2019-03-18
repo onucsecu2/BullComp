@@ -22,13 +22,14 @@ struct number map[50];
 int INT_TYPE = 1;
 int DOUBLE_TYPE = 2;
 int vindex=0;
-int lineno=0;
+int errline=0;
+int errcol=0;
 %}
 %union {
 	struct number values;
 	
 }
-%token INTEGER DOUBLE ECHO DEF RETURN
+%token INTEGER DOUBLE ECHO DEF RETURN IF ELSE FOR EXTERN PRINTI EQ NE GE LE IN TO BY
 %token <values> INTEGER_VALUE 
 %token <values> DOUBLE_VALUE
 %token <values> IDENTIFIER
@@ -38,95 +39,70 @@ int lineno=0;
 %type <values> stmt
 %type <values> block
 %% 
-program:
-          program stmt '\n'         { $$=$2;lineno++;}
-	|          
-        ;
-stmt	: ECHO '(' expr ')' 	 		{ $$ = $3; 
-						if($$.type==1)
-							printf("=> %d\n",$$.ival);
-				      		else
-							printf("=> %f\n",$$.fval);}
-	| var_decl
-	| func_decl			
-	;
-var_decl :  IDENTIFIER ':' DOUBLE '=' DOUBLE_VALUE        { varTable($5.ival,$5.fval    ,2,$1.var) ;}
-	| IDENTIFIER ':' INTEGER '=' INTEGER_VALUE 	{ varTable($5.ival,1.0*$5.ival,1,$1.var) ;}
-    	| IDENTIFIER ':' INTEGER '=' expr		{ varTable($5.ival,1.0*$5.ival,1,$1.var) ;}
-	| IDENTIFIER ':' INTEGER			{ varTable(0,0    ,1,$1.var) ;}
-	| IDENTIFIER ':' DOUBLE				{ varTable(0,0    ,2,$1.var) ;}
-	| IDENTIFIER '=' expr	
-	;
-expr:	  
-	  IDENTIFIER		  { $$ = varGet($1.var);  }
-	| value			 
-        | expr '+' expr           { 
-					if($1.type==1 && $3.type==1){ 
-						$$.ival = $1.ival + $3.ival;
-						$$.fval=$$.ival*1.0;
-						$$.type=1;
-						
-					}else{
-						$$.fval = $1.fval + $3.fval;
-						$$.type=2;
-					}
-				}
-	| expr '-' expr		{ 
-					if($1.type==1 && $3.type==1){ 
-						$$.ival = $1.ival - $3.ival;
-						$$.fval=$$.ival*1.0;
-						$$.type=1;
-						
-					}else{
-						$$.fval = $1.fval - $3.fval;
-						$$.type=2;
-					}
-				}
-	| expr '*' expr		{ 
-					if($1.type==1 && $3.type==1){ 
-						$$.ival = $1.ival * $3.ival;
-						$$.fval=$$.ival*1.0;
-						$$.type=1;
-						
-					}else{
-						$$.fval = $1.fval * $3.fval;
-						$$.type=2;
-					}
-				}
-	| expr '/' expr		{ 
-					if($1.type==1 && $3.type==1){ 
-						$$.ival = $1.ival / $3.ival;
-						$$.fval=$$.ival*1.0;
-						$$.type=1;
-						
-					}else{
-						$$.fval = $1.fval / $3.fval;
-						$$.type=2;
-					}
-				}
-	| '(' expr ')'
-	| RETURN expr        		{$$=$2; }
-	;
-value:
- 	INTEGER_VALUE
-	| DOUBLE_VALUE
-	;
-func_decl : 
-	DEF IDENTIFIER '(' func_decl_args ')' ':'  INTEGER '=''>' block 
-	| '('func_decl_args')' ':'  IDENTIFIER '=''>' block 
-	;
-func_decl_args :
-	var_decl    
-	| func_decl_args ',' var_decl
-	|
-	; 
-block   : '{' expr '}' 			{$$=$2; }
-	| '{' '}'  
-	;
-
+program             : program stmt          
+	                | 	
+                    ;
+stmt	            :  expr new_line
+	                | IF '(' expr ')' new_line block ELSE new_line block 
+	                | IF '(' expr ')' new_line block
+	                | FOR '(' IDENTIFIER ':' INTEGER IN expr TO expr ')' block
+	                | FOR '(' IDENTIFIER ':' INTEGER IN expr TO expr BY expr ')' block
+	                | extern_decl '\n'
+	                ;
+var_decl            : IDENTIFIER ':' DOUBLE '=' DOUBLE_VALUE 
+	                | IDENTIFIER ':' INTEGER '=' INTEGER_VALUE 	
+    	            | IDENTIFIER ':' INTEGER '=' expr 		
+	                | IDENTIFIER ':' INTEGER 			
+	                | IDENTIFIER ':' DOUBLE				
+	                | IDENTIFIER '=' expr
+	                ;
+expr                : IDENTIFIER		  
+	                | value			 
+                    | expr '+' expr           
+	                | expr '-' expr		
+	                | expr '*' expr		
+	                | expr '/' expr		
+	                | expr comparison expr  
+	                | '(' expr ')'
+	                | RETURN expr new_line
+                    | call_func
+	                | func_decl
+	                | var_decl new_line
+                    | expr new_line
+                    | ECHO '(' expr ')' '\n'
+                    | PRINTI'(' expr ')' '\n'       		
+	                ;
+comparison          : EQ | NE | '<' | LE | '>' | GE ;
+call_func           : IDENTIFIER  '(' call_args ')' new_line
+                    | '(' call_args ')' new_line
+	                ;
+value               : INTEGER_VALUE
+	                | DOUBLE_VALUE
+	                ;
+func_decl           : DEF IDENTIFIER '(' func_decl_args ')' ':'  INTEGER '=''>' block
+                    | DEF IDENTIFIER '(' func_decl_args ')' ':'  DOUBLE '=''>' block 
+	                | '('func_decl_args')' ':'  INTEGER '=''>' block
+                    | '('func_decl_args')' ':'  DOUBLE '=''>' block 
+	                ;
+func_decl_args      : var_decl    
+	                | func_decl_args ',' var_decl
+	                |
+	                ;
+call_args           : expr   
+	                | call_args ',' expr
+	                |
+	                ;
+block               : '{' new_line expr new_line '}' new_line	
+	                | '{' new_line '}' new_line
+	                ;
+new_line            : '\n'
+	                |
+	                ;
+extern_decl         : EXTERN  IDENTIFIER '(' func_decl_args ')' ':'  IDENTIFIER
+	                ;
 %%
 void yyerror(char *s) {
-    fprintf(stderr, "%s in line no:%d at \n", s,lineno+1);
+    fprintf(stderr, "%s in line no:%d at \n", s,errline+1);
     exit(0);
 }
 void varTable(int vali,double valf,int type,char *s ){

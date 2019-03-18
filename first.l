@@ -23,6 +23,18 @@ ID [A-Za-z_][_A-Za-z0-9]*
 	yylval.values.type = 2;
 	return DOUBLE_VALUE;
 }
+== {return EQ; }
+!= {return NE; }
+"<=" {return LE; }
+">=" {return GE; }
+to {return TO; }
+in {return IN; }
+by {return BY; }
+printi {return PRINTI; }
+if {return IF; }
+else {return ELSE; }
+extern {return EXTERN; }
+for {return FOR; }
 return {return RETURN; }
 echo {return ECHO; }
 def {return DEF; }
